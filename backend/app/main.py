@@ -12,7 +12,7 @@ app = FastAPI(title="Carbon Tracker API")
 
 app.add_middleware(
 	CORSMiddleware,
-	allow_origins=["*"],
+	allow_origins=["http://carbonfootprinttracker.s3-website.eu-north-1.amazonaws.com"],
 	allow_credentials=True,
 	allow_methods=["*"],
 	allow_headers=["*"],
