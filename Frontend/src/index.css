@@ -1,0 +1,85 @@
+@import "tailwindcss";
+
+@layer base {
+	:root {
+		--app-bg: 255 255 255;
+	}
+	html, body, #root {
+		height: 100%;
+	}
+	body {
+		@apply bg-gradient-to-br from-emerald-50 via-white to-blue-50 text-slate-800 antialiased;
+		background-attachment: fixed;
+	}
+}
+
+@layer components {
+	.card {
+		@apply bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg shadow-slate-200/50 ring-1 ring-white/20 p-6 hover:shadow-xl hover:shadow-slate-200/60 transition-all duration-300;
+	}
+	
+	.card-gradient {
+		@apply bg-gradient-to-br from-white via-white to-slate-50/50 backdrop-blur-sm rounded-2xl shadow-lg shadow-slate-200/50 ring-1 ring-white/20 p-6 hover:shadow-xl hover:shadow-slate-200/60 transition-all duration-300;
+	}
+	
+	.btn-primary {
+		@apply inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-emerald-500 to-emerald-600 text-white px-6 py-3 font-semibold shadow-lg shadow-emerald-500/25 hover:shadow-xl hover:shadow-emerald-500/40 hover:scale-105 transition-all duration-200;
+	}
+	
+	.btn-secondary {
+		@apply inline-flex items-center justify-center gap-2 rounded-xl bg-white text-slate-700 px-6 py-3 font-semibold shadow-md ring-1 ring-slate-200 hover:bg-slate-50 hover:shadow-lg transition-all duration-200;
+	}
+	
+	.nav-link {
+		@apply px-4 py-2.5 rounded-xl font-semibold text-slate-600 hover:text-emerald-600 hover:bg-white/60 transition-all duration-200;
+	}
+	
+	.nav-link-active {
+		@apply bg-white text-emerald-600 shadow-lg shadow-emerald-500/10 ring-1 ring-emerald-500/20;
+	}
+	
+	.metric-card {
+		@apply bg-gradient-to-br from-white to-slate-50/80 rounded-xl p-4 shadow-md hover:shadow-lg transition-all duration-200 border border-slate-100;
+	}
+	
+	.input-field {
+		@apply w-full border border-slate-200 rounded-xl px-4 py-3 bg-white/80 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 transition-all duration-200 placeholder:text-slate-400;
+	}
+	
+	.glass-effect {
+		@apply bg-white/20 backdrop-blur-md border border-white/20;
+	}
+	
+	.fade-in {
+		animation: fadeIn 0.6s ease-out;
+	}
+	
+	.slide-up {
+		animation: slideUp 0.6s ease-out;
+	}
+}
+
+@keyframes fadeIn {
+	from { opacity: 0; }
+	to { opacity: 1; }
+}
+
+@keyframes slideUp {
+	from { 
+		opacity: 0;
+		transform: translateY(20px);
+	}
+	to { 
+		opacity: 1;
+		transform: translateY(0);
+	}
+}
+
+@keyframes pulse {
+	0%, 100% { opacity: 1; }
+	50% { opacity: 0.8; }
+}
+
+.loading-pulse {
+	animation: pulse 2s infinite;
+}
