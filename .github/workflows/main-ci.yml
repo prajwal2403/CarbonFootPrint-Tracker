@@ -1,0 +1,50 @@
+# Name of the workflow, which you'll see in the GitHub "Actions" tab
+name: Carbon Tracker CI Pipeline
+
+# This workflow triggers on two events:
+# 1. When code is pushed to the 'main' branch.
+# 2. When a pull request is created or updated targeting the 'main' branch.
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+# Defines the actual tasks to be run.
+jobs:
+  # We'll name our job 'build-and-test'.
+  build-and-test:
+    # Use the latest stable version of Ubuntu as the operating system for our environment.
+    runs-on: ubuntu-latest
+
+    # These are the sequential steps the job will perform.
+    steps:
+      # Step 1: Check out your repository's code.
+      # This is a standard action that downloads your code into the runner.
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      # Step 2: Set up the correct Node.js version.
+      # Many projects require a specific Node version; this ensures consistency.
+      - name: Setup Node.js v20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm' # This speeds up future runs by caching dependencies
+
+      # Step 3: Install all project dependencies.
+      # This runs 'npm install' to get all the packages needed by your app.
+      - name: Install Dependencies
+        run: npm install
+
+      # Step 4: Run the automated tests.
+      # This runs the 'npm test' script from your package.json.
+      # If tests fail, the workflow stops here and reports a failure.
+      - name: Run Tests
+        run: npm test
+
+      # Step 5: Create a production build.
+      # This runs the 'npm run build' script to make sure your app can be
+      # successfully packaged for deployment.
+      - name: Build Project
+        run: npm run build
