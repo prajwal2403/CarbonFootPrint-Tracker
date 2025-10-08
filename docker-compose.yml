@@ -1,0 +1,63 @@
+version: '3.8'
+
+services:
+  # MySQL Database
+  mysql:
+    image: mysql:8.0
+    container_name: carbon-tracker-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: carbon_tracker
+      MYSQL_USER: admin
+      MYSQL_PASSWORD: password
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - carbon-tracker-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 20s
+      retries: 10
+
+  # Backend API
+  backend:
+    build: ./backend
+    container_name: carbon-tracker-backend
+    environment:
+      DATABASE_URL: mysql+pymysql://admin:password@mysql:3306/carbon_tracker
+      SECRET_KEY: your-secret-key-for-development
+      ALLOWED_ORIGINS: http://localhost:3000,http://localhost:5173,http://localhost:5174
+    ports:
+      - "8000:8000"
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - carbon-tracker-network
+    volumes:
+      - ./backend:/app
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+
+  # Frontend (for development)
+  frontend:
+    build: ./Frontend
+    container_name: carbon-tracker-frontend
+    ports:
+      - "3000:3000"
+    environment:
+      VITE_API_URL: http://localhost:8000
+    networks:
+      - carbon-tracker-network
+    volumes:
+      - ./Frontend:/app
+      - /app/node_modules
+
+volumes:
+  mysql_data:
+
+networks:
+  carbon-tracker-network:
+    driver: bridge

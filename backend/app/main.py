@@ -98,6 +98,10 @@ async def login(user_credentials: UserLogin, db: Session = Depends(get_db)):
 async def get_current_user_info(current_user: User = Depends(get_current_user)):
 	return current_user
 
+@app.get('/health')
+async def health_check():
+	return {"status": "healthy", "message": "Carbon Tracker API is running"}
+
 @app.post('/compute', response_model=ComputeResponse)
 async def compute(payload: ComputeRequest):
 	travel_kg, electricity_kg, food_kg, total_kg = calculate_emissions(
