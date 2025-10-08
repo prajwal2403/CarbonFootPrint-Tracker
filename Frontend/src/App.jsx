@@ -1,8 +1,12 @@
-import { BrowserRouter, Routes, Route, NavLink } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, NavLink, Navigate } from 'react-router-dom'
 import './index.css'
 import Dashboard from './pages/Dashboard'
 import LogActivity from './pages/LogActivity'
 import Reports from './pages/Reports'
+import Login from './pages/Login'
+import Signup from './pages/Signup'
+import { AuthProvider, useAuth } from './contexts/AuthContext'
+import ProtectedRoute from './components/ProtectedRoute'
 
 // Simple icon components
 const DashboardIcon = () => (
@@ -30,7 +34,19 @@ const LeafIcon = () => (
   </svg>
 )
 
+const LogoutIcon = () => (
+  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+  </svg>
+)
+
 function Layout({ children }) {
+  const { user, logout } = useAuth()
+
+  const handleLogout = () => {
+    logout()
+  }
+
   return (
     <div className="min-h-screen fade-in">
       <header className="sticky top-0 z-20 glass-effect backdrop-blur-lg border-b border-white/20">
@@ -46,29 +62,45 @@ function Layout({ children }) {
               <p className="text-sm text-slate-500 font-medium">Track your environmental impact</p>
             </div>
           </div>
-          <nav className="flex gap-2">
-            <NavLink 
-              className={({isActive}) => isActive ? 'nav-link nav-link-active' : 'nav-link'} 
-              to="/"
-            >
-              <DashboardIcon />
-              Dashboard
-            </NavLink>
-            <NavLink 
-              className={({isActive}) => isActive ? 'nav-link nav-link-active' : 'nav-link'} 
-              to="/log"
-            >
-              <LogIcon />
-              Log Activity
-            </NavLink>
-            <NavLink 
-              className={({isActive}) => isActive ? 'nav-link nav-link-active' : 'nav-link'} 
-              to="/reports"
-            >
-              <ReportsIcon />
-              Reports
-            </NavLink>
-          </nav>
+          <div className="flex items-center gap-4">
+            <nav className="flex gap-2">
+              <NavLink 
+                className={({isActive}) => isActive ? 'nav-link nav-link-active' : 'nav-link'} 
+                to="/dashboard"
+              >
+                <DashboardIcon />
+                Dashboard
+              </NavLink>
+              <NavLink 
+                className={({isActive}) => isActive ? 'nav-link nav-link-active' : 'nav-link'} 
+                to="/log"
+              >
+                <LogIcon />
+                Log Activity
+              </NavLink>
+              <NavLink 
+                className={({isActive}) => isActive ? 'nav-link nav-link-active' : 'nav-link'} 
+                to="/reports"
+              >
+                <ReportsIcon />
+                Reports
+              </NavLink>
+            </nav>
+            {user && (
+              <div className="flex items-center gap-3">
+                <span className="text-sm text-gray-600 font-medium">
+                  Welcome, {user.username}
+                </span>
+                <button
+                  onClick={handleLogout}
+                  className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all duration-200"
+                >
+                  <LogoutIcon />
+                  Logout
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </header>
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 slide-up">
@@ -85,16 +117,66 @@ function Layout({ children }) {
   )
 }
 
+function AppContent() {
+  const { isAuthenticated, loading, user } = useAuth()
+  
+  console.log('AppContent render - isAuthenticated:', isAuthenticated, 'loading:', loading, 'user:', user)
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="flex items-center space-x-2">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600"></div>
+          <span className="text-gray-600">Loading...</span>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <Routes>
+      {/* Public routes */}
+      <Route 
+        path="/login" 
+        element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <Login />} 
+      />
+      <Route 
+        path="/signup" 
+        element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <Signup />} 
+      />
+      
+      {/* Protected routes */}
+      <Route path="/dashboard" element={
+        <ProtectedRoute>
+          <Layout><Dashboard /></Layout>
+        </ProtectedRoute>
+      } />
+      <Route path="/log" element={
+        <ProtectedRoute>
+          <Layout><LogActivity /></Layout>
+        </ProtectedRoute>
+      } />
+      <Route path="/reports" element={
+        <ProtectedRoute>
+          <Layout><Reports /></Layout>
+        </ProtectedRoute>
+      } />
+      
+      {/* Redirect root to dashboard or login */}
+      <Route 
+        path="/" 
+        element={<Navigate to={isAuthenticated ? "/dashboard" : "/login"} replace />} 
+      />
+    </Routes>
+  )
+}
+
 export default function App() {
   return (
     <BrowserRouter>
-      <Layout>
-        <Routes>
-          <Route path="/" element={<Dashboard />} />
-          <Route path="/log" element={<LogActivity />} />
-          <Route path="/reports" element={<Reports />} />
-        </Routes>
-      </Layout>
+      <AuthProvider>
+        <AppContent />
+      </AuthProvider>
     </BrowserRouter>
   )
 }
