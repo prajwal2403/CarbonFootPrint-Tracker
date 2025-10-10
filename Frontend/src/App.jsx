@@ -1,8 +1,12 @@
-import { BrowserRouter, Routes, Route, NavLink } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, NavLink, Navigate } from 'react-router-dom'
 import './index.css'
+import { AuthProvider, useAuth } from './contexts/AuthContext'
+import ProtectedRoute from './components/ProtectedRoute'
 import Dashboard from './pages/Dashboard'
 import LogActivity from './pages/LogActivity'
 import Reports from './pages/Reports'
+import Login from './pages/Login'
+import Signup from './pages/Signup'
 
 // Simple icon components
 const DashboardIcon = () => (
@@ -30,7 +34,19 @@ const LeafIcon = () => (
   </svg>
 )
 
+const LogoutIcon = () => (
+  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+  </svg>
+)
+
 function Layout({ children }) {
+  const { user, logout } = useAuth();
+
+  const handleLogout = () => {
+    logout();
+  };
+
   return (
     <div className="min-h-screen fade-in">
       <header className="sticky top-0 z-20 glass-effect backdrop-blur-lg border-b border-white/20">
@@ -43,32 +59,43 @@ function Layout({ children }) {
               <h1 className="text-2xl font-bold tracking-tight bg-gradient-to-r from-emerald-600 to-green-700 bg-clip-text text-transparent">
                 Carbon Tracker
               </h1>
-              <p className="text-sm text-slate-500 font-medium">Track your environmental impact</p>
+              <p className="text-sm text-slate-500 font-medium">
+                Welcome back, {user?.username || 'User'}
+              </p>
             </div>
           </div>
-          <nav className="flex gap-2">
-            <NavLink 
-              className={({isActive}) => isActive ? 'nav-link nav-link-active' : 'nav-link'} 
-              to="/"
+          <div className="flex items-center gap-4">
+            <nav className="flex gap-2">
+              <NavLink 
+                className={({isActive}) => isActive ? 'nav-link nav-link-active' : 'nav-link'} 
+                to="/"
+              >
+                <DashboardIcon />
+                Dashboard
+              </NavLink>
+              <NavLink 
+                className={({isActive}) => isActive ? 'nav-link nav-link-active' : 'nav-link'} 
+                to="/log"
+              >
+                <LogIcon />
+                Log Activity
+              </NavLink>
+              <NavLink 
+                className={({isActive}) => isActive ? 'nav-link nav-link-active' : 'nav-link'} 
+                to="/reports"
+              >
+                <ReportsIcon />
+                Reports
+              </NavLink>
+            </nav>
+            <button 
+              onClick={handleLogout}
+              className="nav-link text-red-600 hover:text-red-700 hover:bg-red-50"
             >
-              <DashboardIcon />
-              Dashboard
-            </NavLink>
-            <NavLink 
-              className={({isActive}) => isActive ? 'nav-link nav-link-active' : 'nav-link'} 
-              to="/log"
-            >
-              <LogIcon />
-              Log Activity
-            </NavLink>
-            <NavLink 
-              className={({isActive}) => isActive ? 'nav-link nav-link-active' : 'nav-link'} 
-              to="/reports"
-            >
-              <ReportsIcon />
-              Reports
-            </NavLink>
-          </nav>
+              <LogoutIcon />
+              Logout
+            </button>
+          </div>
         </div>
       </header>
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 slide-up">
@@ -85,16 +112,33 @@ function Layout({ children }) {
   )
 }
 
+function AuthenticatedApp() {
+  return (
+    <Layout>
+      <Routes>
+        <Route path="/" element={<Dashboard />} />
+        <Route path="/log" element={<LogActivity />} />
+        <Route path="/reports" element={<Reports />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </Layout>
+  )
+}
+
 export default function App() {
   return (
-    <BrowserRouter>
-      <Layout>
+    <AuthProvider>
+      <BrowserRouter>
         <Routes>
-          <Route path="/" element={<Dashboard />} />
-          <Route path="/log" element={<LogActivity />} />
-          <Route path="/reports" element={<Reports />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/signup" element={<Signup />} />
+          <Route path="/*" element={
+            <ProtectedRoute>
+              <AuthenticatedApp />
+            </ProtectedRoute>
+          } />
         </Routes>
-      </Layout>
-    </BrowserRouter>
+      </BrowserRouter>
+    </AuthProvider>
   )
 }

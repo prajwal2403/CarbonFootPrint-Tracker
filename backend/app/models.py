@@ -5,9 +5,9 @@ from .database import Base
 class User(Base):
 	__tablename__ = 'users'
 	id = Column(Integer, primary_key=True, index=True)
-	email = Column(String, unique=True, index=True, nullable=False)
-	username = Column(String, unique=True, index=True, nullable=False)
-	hashed_password = Column(String, nullable=False)
+	email = Column(String(255), unique=True, index=True, nullable=False)
+	username = Column(String(100), unique=True, index=True, nullable=False)
+	hashed_password = Column(String(255), nullable=False)
 	is_active = Column(Boolean, default=True)
 	
 	logs = relationship("Log", back_populates="user")
@@ -16,11 +16,11 @@ class Log(Base):
 	__tablename__ = 'logs'
 	id = Column(Integer, primary_key=True, index=True)
 	user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
-	date = Column(String, index=True)
+	date = Column(String(50), index=True)
 	travel_km = Column(Float, default=0)
-	travel_mode = Column(String, default='car')
+	travel_mode = Column(String(50), default='car')
 	electricity_kwh = Column(Float, default=0)
-	diet = Column(String, default='mixed')
+	diet = Column(String(50), default='mixed')
 	travel_kg = Column(Float, default=0)
 	electricity_kg = Column(Float, default=0)
 	food_kg = Column(Float, default=0)
