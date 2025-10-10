@@ -12,43 +12,35 @@ export const useAuth = () => {
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
-  const [token, setToken] = useState(null);
   const [loading, setLoading] = useState(true);
 
   // Check for stored auth data on app load
   useEffect(() => {
-    const storedToken = localStorage.getItem('token');
     const storedUser = localStorage.getItem('user');
     
-    if (storedToken && storedUser) {
-      setToken(storedToken);
+    if (storedUser) {
       setUser(JSON.parse(storedUser));
     }
     setLoading(false);
   }, []);
 
-  const login = (authData) => {
-    const { access_token, user: userData } = authData;
-    setToken(access_token);
+  const login = (userData) => {
+    // Backend now returns user object directly
     setUser(userData);
-    localStorage.setItem('token', access_token);
     localStorage.setItem('user', JSON.stringify(userData));
   };
 
   const logout = () => {
-    setToken(null);
     setUser(null);
-    localStorage.removeItem('token');
     localStorage.removeItem('user');
   };
 
   const isAuthenticated = () => {
-    return !!token && !!user;
+    return !!user;
   };
 
   const value = {
     user,
-    token,
     login,
     logout,
     isAuthenticated,

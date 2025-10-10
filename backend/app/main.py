@@ -10,9 +10,7 @@ from .schemas import (
 	UserCreate, UserLogin, UserResponse, Token
 )
 from .logic import (
-	calculate_emissions, compute_eco_score, generate_tips,
-	verify_password, get_password_hash, create_access_token, verify_token,
-	ACCESS_TOKEN_EXPIRE_MINUTES
+	calculate_emissions, compute_eco_score, generate_tips
 )
 
 Base.metadata.create_all(bind=engine)
@@ -27,27 +25,22 @@ app.add_middleware(
 		"http://localhost:5175",
 		"http://127.0.0.1:5173",
 		"http://127.0.0.1:5174",
-		"http://127.0.0.1:5175"
+		"http://127.0.0.1:5175",
+		# Add more ports for development flexibility
+		"http://localhost:3000",
+		"http://localhost:5176",
+		"http://localhost:8080",
+		# Add your S3 bucket URL when you deploy frontend
+		# "http://your-s3-bucket-name.s3-website-region.amazonaws.com"
 	],
 	allow_credentials=True,
-	allow_methods=["*"],
+	allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
 	allow_headers=["*"],
 )
 
-# Security
-security = HTTPBearer()
-
-def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security), db: Session = Depends(get_db)):
-	token = credentials.credentials
-	email = verify_token(token)
-	user = db.query(User).filter(User.email == email).first()
-	if user is None:
-		raise HTTPException(
-			status_code=status.HTTP_401_UNAUTHORIZED,
-			detail="User not found",
-			headers={"WWW-Authenticate": "Bearer"},
-		)
-	return user
+@app.get("/")
+async def root():
+	return {"message": "Carbon Tracker API is running!", "status": "healthy"}
 
 # Authentication endpoints
 @app.post('/register', response_model=UserResponse)
@@ -64,41 +57,27 @@ async def register(user_data: UserCreate, db: Session = Depends(get_db)):
 			detail="Username already taken"
 		)
 	
-	# Create new user
-	hashed_password = get_password_hash(user_data.password)
+	# Create new user (simple - no password hashing)
 	user = User(
 		email=user_data.email,
 		username=user_data.username,
-		hashed_password=hashed_password
+		hashed_password=user_data.password  # Store plain text password
 	)
 	db.add(user)
 	db.commit()
 	db.refresh(user)
 	return user
 
-@app.post('/login', response_model=Token)
+@app.post('/login', response_model=UserResponse)
 async def login(user_credentials: UserLogin, db: Session = Depends(get_db)):
 	user = db.query(User).filter(User.email == user_credentials.email).first()
-	if not user or not verify_password(user_credentials.password, user.hashed_password):
+	if not user or user.hashed_password != user_credentials.password:
 		raise HTTPException(
 			status_code=status.HTTP_401_UNAUTHORIZED,
-			detail="Incorrect email or password",
-			headers={"WWW-Authenticate": "Bearer"},
+			detail="Incorrect email or password"
 		)
 	
-	access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-	access_token = create_access_token(
-		data={"sub": user.email}, expires_delta=access_token_expires
-	)
-	return {
-		"access_token": access_token,
-		"token_type": "bearer",
-		"user": user
-	}
-
-@app.get('/me', response_model=UserResponse)
-async def get_current_user_info(current_user: User = Depends(get_current_user)):
-	return current_user
+	return user
 
 @app.post('/compute', response_model=ComputeResponse)
 async def compute(payload: ComputeRequest):
@@ -116,13 +95,21 @@ async def compute(payload: ComputeRequest):
 		"tips": tips
 	}
 
-@app.post('/logs', response_model=LogEntry)
-async def create_log(payload: ComputeRequest, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+@app.post('/logs/{user_id}', response_model=LogEntry)
+async def create_log(user_id: int, payload: ComputeRequest, db: Session = Depends(get_db)):
+	# Verify user exists
+	user = db.query(User).filter(User.id == user_id).first()
+	if not user:
+		raise HTTPException(
+			status_code=status.HTTP_404_NOT_FOUND,
+			detail="User not found"
+		)
+	
 	travel_kg, electricity_kg, food_kg, total_kg = calculate_emissions(
 		payload.travelKm, payload.travelMode, payload.electricityKwh, payload.diet
 	)
 	log = Log(
-		user_id=current_user.id,
+		user_id=user_id,  # Use actual user ID
 		date=payload.date,
 		travel_km=payload.travelKm,
 		travel_mode=payload.travelMode,
@@ -148,9 +135,17 @@ async def create_log(payload: ComputeRequest, current_user: User = Depends(get_c
 		"totalKg": log.total_kg,
 	}
 
-@app.get('/logs', response_model=LogResponse)
-async def list_logs(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-	rows = db.query(Log).filter(Log.user_id == current_user.id).order_by(Log.id.asc()).all()
+@app.get('/logs/{user_id}', response_model=LogResponse)
+async def list_logs(user_id: int, db: Session = Depends(get_db)):
+	# Verify user exists
+	user = db.query(User).filter(User.id == user_id).first()
+	if not user:
+		raise HTTPException(
+			status_code=status.HTTP_404_NOT_FOUND,
+			detail="User not found"
+		)
+	
+	rows = db.query(Log).filter(Log.user_id == user_id).order_by(Log.id.asc()).all()
 	items = []
 	for l in rows:
 		items.append({

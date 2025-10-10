@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { listLogs } from '../lib/api'
+import { useAuth } from '../contexts/AuthContext'
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts'
 
 const COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444']
@@ -62,16 +63,19 @@ function StatsCard({ title, value, subtitle, icon, color = "emerald" }) {
 }
 
 export default function Dashboard() {
+	const { user } = useAuth()
 	const [logs, setLogs] = useState([])
 	const [loading, setLoading] = useState(true)
 	
 	useEffect(() => {
+		if (!user) return
+		
 		setLoading(true)
-		listLogs()
+		listLogs(user.id)
 			.then(data => setLogs(data.items || []))
 			.catch(() => setLogs([]))
 			.finally(() => setLoading(false))
-	}, [])
+	}, [user])
 	
 	const latest = logs[logs.length - 1]
 	const eco = useMemo(() => latest ? Math.max(0, Math.min(100, Math.round(100 - (latest.totalKg / 10) * 100))) : 0, [latest])

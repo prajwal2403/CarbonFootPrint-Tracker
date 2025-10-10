@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { listLogs } from '../lib/api'
+import { useAuth } from '../contexts/AuthContext'
 
 // Icon components
 const HistoryIcon = () => (
@@ -65,18 +66,21 @@ function StatCard({ title, value, subtitle, change, icon }) {
 }
 
 export default function Reports() {
+	const { user } = useAuth()
 	const [logs, setLogs] = useState([])
 	const [loading, setLoading] = useState(true)
 	const [sortBy, setSortBy] = useState('date')
 	const [sortOrder, setSortOrder] = useState('desc')
 
 	useEffect(() => {
+		if (!user) return
+		
 		setLoading(true)
-		listLogs()
+		listLogs(user.id)
 			.then(data => setLogs((data.items || []).slice().reverse()))
 			.catch(() => setLogs([]))
 			.finally(() => setLoading(false))
-	}, [])
+	}, [user])
 
 	// Calculate statistics
 	const totalEmissions = logs.reduce((sum, log) => sum + log.totalKg, 0)

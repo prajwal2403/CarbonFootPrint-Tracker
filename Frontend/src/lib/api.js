@@ -1,11 +1,9 @@
-const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
+const BASE_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000'
 
 // Helper function to get auth headers
 const getAuthHeaders = () => {
-	const token = localStorage.getItem('token');
 	return {
-		'Content-Type': 'application/json',
-		...(token && { Authorization: `Bearer ${token}` })
+		'Content-Type': 'application/json'
 	};
 };
 
@@ -37,12 +35,8 @@ export async function login(credentials) {
 	return handleResponse(res);
 }
 
-export async function getCurrentUser() {
-	const res = await fetch(`${BASE_URL}/me`, {
-		headers: getAuthHeaders()
-	});
-	return handleResponse(res);
-}
+// getCurrentUser is no longer needed since we don't use JWT tokens
+// User data is returned directly from login endpoint
 
 // Carbon tracking APIs
 export async function compute(payload) {
@@ -54,18 +48,18 @@ export async function compute(payload) {
 	return handleResponse(res);
 }
 
-export async function createLog(payload) {
-	const res = await fetch(`${BASE_URL}/logs`, {
+export async function createLog(userId, payload) {
+	const res = await fetch(`${BASE_URL}/logs/${userId}`, {
 		method: 'POST',
-		headers: getAuthHeaders(),
+		headers: { 'Content-Type': 'application/json' },
 		body: JSON.stringify(payload)
 	});
 	return handleResponse(res);
 }
 
-export async function listLogs() {
-	const res = await fetch(`${BASE_URL}/logs`, {
-		headers: getAuthHeaders()
+export async function listLogs(userId) {
+	const res = await fetch(`${BASE_URL}/logs/${userId}`, {
+		headers: { 'Content-Type': 'application/json' }
 	});
 	return handleResponse(res);
 }

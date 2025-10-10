@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { compute, createLog } from '../lib/api'
+import { useAuth } from '../contexts/AuthContext'
 
 // Icon components
 const SaveIcon = () => (
@@ -46,6 +47,7 @@ const BulbIcon = () => (
 )
 
 export default function LogActivity() {
+	const { user } = useAuth()
 	const [form, setForm] = useState({
 		date: new Date().toISOString().slice(0, 10),
 		travelKm: 0,
@@ -65,11 +67,15 @@ export default function LogActivity() {
 
 	async function onSubmit(e) {
 		e.preventDefault()
+		if (!user) {
+			console.error('User not logged in')
+			return
+		}
 		setSaving(true)
 		try {
 			const computed = await compute(form)
 			setCalc(computed)
-			await createLog(form)
+			await createLog(user.id, form)
 			setSaved(true)
 			setTimeout(() => setSaved(false), 3000) // Reset after 3 seconds
 		} catch (error) {
